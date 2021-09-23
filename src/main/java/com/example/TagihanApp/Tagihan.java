@@ -6,17 +6,37 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 
 @Entity // This tells Hibernate to make a table out of this class
-@Data @NoArgsConstructor @AllArgsConstructor
+@Data
 public class Tagihan {
     @Id
     @GeneratedValue(strategy=GenerationType.AUTO)
     private Long id;
 
-    public Long idPenagih;
+    private Long idPenagih;
 
-    public Long idYangDitagih;
+    private Long idYangDitagih;
 
-    public BigDecimal nominalTagihan;
+    private BigDecimal tagihanNominal;
+
+    private Boolean tagihanLunas;
+
+    private Timestamp tagihanCreated;
+
+    private Long tagihanDurasi;
+
+    private String tagihanKeterangan;
+
+//    public Tagihan (Long idPenagih, Long idYangDitagih, BigDecimal tagihanNominal, Boolean tagihanLunas
+//            , Timestamp tagihanCreated, Long tagihanDurasi, String tagihanKeterangan) {
+//        this.idPenagih = idPenagih;
+//        this.idYangDitagih = idYangDitagih;
+//        this.tagihanNominal = tagihanNominal;
+//        this.tagihanLunas = tagihanLunas;
+//        this.tagihanCreated = tagihanCreated;
+//        this.tagihanDurasi = tagihanDurasi;
+//        this.tagihanKeterangan = tagihanKeterangan;
+//    }
 }
