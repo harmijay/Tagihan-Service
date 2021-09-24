@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 @Entity // This tells Hibernate to make a table out of this class
-@Data
+@Data @NoArgsConstructor @AllArgsConstructor
 public class Tagihan {
     @Id
     @GeneratedValue(strategy=GenerationType.AUTO)
@@ -28,15 +28,4 @@ public class Tagihan {
     private Long tagihanDurasi;
 
     private String tagihanKeterangan;
-
-//    public Tagihan (Long idPenagih, Long idYangDitagih, BigDecimal tagihanNominal, Boolean tagihanLunas
-//            , Timestamp tagihanCreated, Long tagihanDurasi, String tagihanKeterangan) {
-//        this.idPenagih = idPenagih;
-//        this.idYangDitagih = idYangDitagih;
-//        this.tagihanNominal = tagihanNominal;
-//        this.tagihanLunas = tagihanLunas;
-//        this.tagihanCreated = tagihanCreated;
-//        this.tagihanDurasi = tagihanDurasi;
-//        this.tagihanKeterangan = tagihanKeterangan;
-//    }
 }
