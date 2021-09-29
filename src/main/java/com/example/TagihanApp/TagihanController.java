@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-@Controller // This means that this class is a Controller
-@RequestMapping(path="/tagihan") // This means URL's start with /demo (after Application path)
+@Controller
+@RequestMapping(path="/tagihan")
 public class TagihanController {
 
     @Autowired
@@ -85,7 +85,6 @@ public class TagihanController {
     @GetMapping(path="/tes1")
     public @ResponseBody Object tes1() throws JSONException {
         WebClient tesClient = WebClient.create(tagihanService);
-//        WebClient tesClient = builder.baseUrl(tagihanService).build();
 
         HashMap hash = new HashMap();
         hash.put("idPenagih", 2);
@@ -104,7 +103,6 @@ public class TagihanController {
     @GetMapping(path="/tes2")
     public @ResponseBody Object tes2() {
         WebClient tesClient = WebClient.create(tagihanService);
-//        WebClient tesClient = builder.baseUrl(tagihanService).build();
 
         ResponseSpec response = tesClient.get()
                 .uri("/tagihan/all").retrieve();
@@ -114,8 +112,7 @@ public class TagihanController {
 
     @GetMapping(path="/tes3")
     public @ResponseBody Object tes3() {
-//        WebClient tesClient = WebClient.create(tagihanService);
-        WebClient tesClient = builder.baseUrl(tagihanService).build();
+        WebClient tesClient = WebClient.create(tagihanService);
 
         ResponseSpec response = tesClient.get()
                 .uri("/tagihan/all").retrieve();
@@ -151,7 +148,6 @@ public class TagihanController {
             return rez;
         }
 
-        //cek idPenagih
 //        hash.clear();
 //        hash.put("", );
 
@@ -166,7 +162,6 @@ public class TagihanController {
             return rez;
         }
 
-        //cek idYangDitagih
 //        hash.clear();
 //        hash.put("", );
 
@@ -181,10 +176,8 @@ public class TagihanController {
             return rez;
         }
 
-        //tagihan lunas
         tagihan.get().setTagihanLunas(Boolean.TRUE);
 
-        //nambah tabungan penagih
         hash.clear();
         hash.put("nomorRekening", tagihan.get().getIdPenagih());
         hash.put("jumlah", tagihan.get().getTagihanNominal());
@@ -200,7 +193,6 @@ public class TagihanController {
             return rez;
         }
 
-        //kurangin tabungan yang ditagih
         hash.clear();
         hash.put("nomorRekening", tagihan.get().getIdYangDitagih());
         hash.put("jumlah", tagihan.get().getTagihanNominal());
@@ -232,7 +224,6 @@ public class TagihanController {
         Restponse rez = new Restponse();
         WebClient nasabahClient = WebClient.create(nasabahService);
 
-        //cek idPenagih
 //        hash.clear();
 //        hash.put("", );
 
@@ -247,7 +238,6 @@ public class TagihanController {
             return rez;
         }
 
-        //cek idYangDitagih
 //        hash.clear();
 //        hash.put("", );
 
@@ -310,7 +300,7 @@ public class TagihanController {
         return "Tagihan Modified Succesfully";
     }
 
-    @PostMapping(path="") // Map ONLY POST Requests
+    @PostMapping(path="")
     public @ResponseBody String addNewTagihan (@RequestBody Tagihan tagihan) {
 //        Restponse rez = new Restponse();
 //        if (n.isEmpty()) {
@@ -372,10 +362,4 @@ public class TagihanController {
             return rez;
         }
     }
-
-//    @DeleteMapping(path="/all")
-//    public @ResponseBody String deleteAllTagihan() {
-//        tagihanRepository.deleteAll();
-//        return "All Tagihan Deleted Succesfully";
-//    }
 }
