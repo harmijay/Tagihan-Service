@@ -88,8 +88,8 @@ public class TagihanController {
 
     @GetMapping(path="/lunasitagihan")
     public @ResponseBody Restponse lunasiTagihan(@RequestBody Long idTagihan) throws JSONException {
-        WebClient nasabahClient = WebClient.create(nasabahService);
-        WebClient tabunganClient = WebClient.create(tabunganService);
+        WebClient nasabahClient = WebClient.create(this.eurekaClient.getNextServerFromEureka(nasabahService, false).getHomePageUrl());
+        WebClient tabunganClient = WebClient.create(this.eurekaClient.getNextServerFromEureka(tabunganService, false).getHomePageUrl());
         HashMap hash = new HashMap();
         Restponse response = new Restponse();
 
@@ -173,7 +173,7 @@ public class TagihanController {
 
         Tagihan newTagihan = new Tagihan();
         Restponse response = new Restponse();
-        WebClient nasabahClient = WebClient.create(nasabahService);
+        WebClient nasabahClient = WebClient.create(this.eurekaClient.getNextServerFromEureka(nasabahService, false).getHomePageUrl());
 
 //        hash.clear();
 //        hash.put("", );
