@@ -12,5 +12,5 @@ public class Restponse {
 
     private String status;
     private String message;
-    private Object data;
+    private Object payload;
 }
