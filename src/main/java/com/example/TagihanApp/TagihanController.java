@@ -5,7 +5,11 @@ import com.netflix.discovery.EurekaClient;
 import com.netflix.servo.monitor.TimedStopwatch;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.ILoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -33,291 +37,81 @@ import java.util.Optional;
 @RequestMapping(path="/tagihan")
 public class TagihanController {
 
-    @Autowired
-    private TagihanRepository tagihanRepository;
+    Logger logger = LoggerFactory.getLogger(TagihanController.class);
 
     @Autowired
+    private TagihanService tagihanService;
     private EurekaClient eurekaClient;
 
-    private String nasabahService = "NASABAHSERVICE";
-    private String tabunganService = "TABUNGANSERVICE";
+    //	private String nasabahUrl = "NASABAHSERVICE";
+//	private String tabunganUrl = "TABUNGANSERVICE";
+    private String nasabahUrl = "TAGIHANSERVICE";
+    private String tabunganUrl = "TAGIHANSERVICE";
+    private String tagihanUrl = "TAGIHANSERVICE";
+
+    public WebClient nasabahClientBuilder() {
+        return WebClient.create(this.eurekaClient.getNextServerFromEureka(nasabahUrl, false).getHomePageUrl());
+    }
+
+    public WebClient tabunganClientBuilder() {
+        return WebClient.create(this.eurekaClient.getNextServerFromEureka(tabunganUrl, false).getHomePageUrl());
+    }
+
+    @Bean
+    public WebClient tagihanClientBuilder() {
+        return WebClient.create(this.eurekaClient.getNextServerFromEureka(tagihanUrl, false).getHomePageUrl());
+    }
 
     @GetMapping("")
-    public @ResponseBody Restponse getTagihan(@RequestBody Long idTagihan) {
-        Optional<Tagihan> optionalTagihan = tagihanRepository.findById(idTagihan);
-        Restponse response = new Restponse();
-        if (optionalTagihan.isEmpty()) {
-            response.setStatus("401");
-            response.setMessage("Could not find Tagihan with idTagihan=" + idTagihan.toString() + ".");
-            return response;
-        }
-        response.setStatus("200");
-        response.setMessage("succesful");
-        response.setPayload(optionalTagihan.get());
-        return response;
+    public @ResponseBody Restponse getTagihanByIdUsingBody(@RequestBody Long idTagihan) {
+        logger.info("membaca tagihan dengan idTagihan=" + idTagihan.toString() + "melalui request body.");
+        return tagihanService.getTagihan(idTagihan);
     }
 
     @GetMapping("/{idTagihan}")
-    public @ResponseBody Restponse getTagihan2(@PathVariable("idTagihan") Long idTagihan) {
-        Optional<Tagihan> optionalTagihan = tagihanRepository.findById(idTagihan);
-        Restponse response = new Restponse();
-        if (optionalTagihan.isEmpty()) {
-            response.setStatus("401");
-            response.setMessage("Could not find Tagihan with idTagihan=" + idTagihan.toString() + ".");
-            return response;
-        }
-        response.setStatus("200");
-        response.setMessage("succesful");
-        response.setPayload(optionalTagihan.get());
-        return response;
+    public @ResponseBody Restponse getTagihanByIdUsingVariable(@PathVariable("idTagihan") Long idTagihan) {
+        logger.info("membaca tagihan dengan idTagihan=" + idTagihan.toString() + "melalui path variable.");
+        return tagihanService.getTagihan(idTagihan);
+    }
+
+    @GetMapping("/param")
+    public @ResponseBody Restponse getTagihanByIdUsingParam(@RequestParam("idTagihan") Long idTagihan) {
+        logger.info("membaca tagihan dengan idTagihan=" + idTagihan.toString() + "melalui request param.");
+        return tagihanService.getTagihan(idTagihan);
     }
 
     @GetMapping(path="/all")
     public @ResponseBody Restponse getAllTagihan() {
-        Iterable<Tagihan> tagihan = tagihanRepository.findAll();
-        Restponse response = new Restponse();
-        if (tagihan.iterator().hasNext()) {
-            response.setStatus("401");
-            response.setMessage("There is no tagihan data found.");
-        }
-        response.setStatus("200");
-        response.setMessage("succesful");
-        response.setPayload(tagihan);
-        return response;
+        return tagihanService.getAllTagihan();
     }
 
     @GetMapping(path="/lunasitagihan")
-    public @ResponseBody Restponse lunasiTagihan(@RequestBody Long idTagihan) throws JSONException {
-        WebClient nasabahClient = WebClient.create(this.eurekaClient.getNextServerFromEureka(nasabahService, false).getHomePageUrl());
-        WebClient tabunganClient = WebClient.create(this.eurekaClient.getNextServerFromEureka(tabunganService, false).getHomePageUrl());
-        HashMap hash = new HashMap();
-        Restponse response = new Restponse();
-
-        Optional<Tagihan> tagihan = tagihanRepository.findById(idTagihan);
-        if (tagihan.isEmpty()) {
-            response.setStatus("401");
-            response.setMessage("Could not Find Tagihan with idTagihan=" + idTagihan.toString() + ".");
-            return response;
-        }
-
-//        hash.clear();
-//        hash.put("", );
-
-        ResponseSpec responseSpecNasabah = nasabahClient.put()
-                .uri("/tesNasabah")
-//                .body(Mono.just(hash), HashMap.class)
-                .retrieve();
-        Restponse responseNasabah = (Restponse) responseSpecNasabah.bodyToMono(Object.class).block();
-        if ( responseNasabah.getStatus() == "441" ) {
-            response.setStatus("472");
-            response.setMessage("Failed to Find Nasabah Penagih Account Associated with idTagihan=" + idTagihan + ".");
-            return response;
-        }
-
-//        hash.clear();
-//        hash.put("", );
-
-        responseSpecNasabah = nasabahClient.put()
-                .uri("/tesNasabah")
-//                .body(Mono.just(hash), HashMap.class)
-                .retrieve();
-        responseNasabah = (Restponse) responseSpecNasabah.bodyToMono(Object.class).block();
-        if ( responseNasabah.getStatus() == "441" ) {
-            response.setStatus("471");
-            response.setMessage("Failed to Find Nasabah Yang Ditagih Account Associated with idTagihan=" + idTagihan + ".");
-            return response;
-        }
-
-        tagihan.get().setTagihanIsLunas(Boolean.TRUE);
-
-        hash.clear();
-        hash.put("nomorRekening", tagihan.get().getIdPenagih());
-        hash.put("jumlah", tagihan.get().getTagihanNominal());
-
-        ResponseSpec responseSpecTabungan = tabunganClient.put()
-                .uri("tabungan/tambah_saldo")
-                .body(Mono.just(hash), HashMap.class)
-                .retrieve();
-        Restponse responseTabungan = (Restponse) responseSpecTabungan.bodyToMono(Object.class).block();
-        if ( responseTabungan.getStatus() == "431" ) {
-            response.setStatus("474");
-            response.setMessage("Failed to Increase Saldo Nasabah Penagih");
-            return response;
-        }
-
-        hash.clear();
-        hash.put("nomorRekening", tagihan.get().getIdYangDitagih());
-        hash.put("jumlah", tagihan.get().getTagihanNominal());
-
-        responseSpecTabungan = tabunganClient.put()
-                .uri("tabungan/kurangi_saldo")
-                .body(Mono.just(hash), HashMap.class)
-                .retrieve();
-        responseTabungan = (Restponse) responseSpecTabungan.bodyToMono(Object.class).block();
-        if ( responseTabungan.getStatus() == "431" ) {
-            response.setStatus("473");
-            response.setMessage("Saldo Nasabah Yang Ditagih Kurang");
-            return response;
-        }
-
-        response.setStatus("270");
-        response.setMessage("Tagihan Payment Succesful");
-        response.setPayload(tagihanRepository.save(tagihan.get()));
-        return response;
+    public @ResponseBody Restponse lunasiTagihan(@RequestBody Long idTagihan) {
+        return tagihanService.lunasiTagihan(idTagihan);
     }
 
-    @GetMapping(path="/buattagihan")
-    public @ResponseBody Restponse buatTagihan (@RequestBody Long idPenagih
-            , @RequestBody Long idYangDitagih, @RequestBody BigDecimal tagihanNominal
-            , @RequestBody Long tagihanDurasi, @RequestBody(required = false) String tagihanKeterangan) {
-
-        Tagihan newTagihan = new Tagihan();
-        Restponse response = new Restponse();
-        WebClient nasabahClient = WebClient.create(this.eurekaClient.getNextServerFromEureka(nasabahService, false).getHomePageUrl());
-
-//        hash.clear();
-//        hash.put("", );
-
-        ResponseSpec responseSpecNasabah = nasabahClient.get()
-                .uri("/tesNasabah")
-//                .body(Mono.just(hash), HashMap.class)
-                .retrieve();
-        Restponse responseNasabah = (Restponse) responseSpecNasabah.bodyToMono(Object.class).block();
-        if ( responseNasabah.getStatus() == "441" ) {
-            response.setStatus("473");
-            response.setMessage("Failed to Find Nasabah Penagih Account");
-            return response;
-        }
-
-//        hash.clear();
-//        hash.put("", );
-
-        responseSpecNasabah = nasabahClient.get()
-                .uri("/tesNasabah")
-//                .body(Mono.just(hash), HashMap.class)
-                .retrieve();
-        responseNasabah = (Restponse) responseSpecNasabah.bodyToMono(Object.class).block();
-        if ( responseNasabah.getStatus() == "441" ) {
-            response.setStatus("472");
-            response.setMessage("Failed to Find Nasabah Yang Ditagih Account");
-            return response;
-        }
-
-        if ( !(tagihanNominal.compareTo(BigDecimal.ZERO) > 0) ) {
-            response.setStatus("471");
-            response.setMessage("Tagihan nominal cannot be 0 or below");
-            return response;
-        }
-        newTagihan.setTagihanNominal(tagihanNominal);
-        newTagihan.setTagihanCreationDatetime(new Timestamp(System.currentTimeMillis()));
-        newTagihan.setTagihanIsLunas(Boolean.FALSE);
-        newTagihan.setTagihanDurasi(tagihanDurasi);
-        if (tagihanKeterangan.isEmpty()) { tagihanKeterangan = "-"; }
-        newTagihan.setTagihanKeterangan(tagihanKeterangan);
-
-        tagihanRepository.save(newTagihan);
-        response.setStatus("270");
-        response.setMessage("Tagihan created succesfully");
-        response.setPayload(newTagihan);
-        return response;
+    @PostMapping(path="")
+    public @ResponseBody Restponse buatTagihan (@RequestBody Tagihan tagihan) {
+        return tagihanService.addNewTagihan(tagihan);
     }
 
     @PatchMapping(path="")
     public @ResponseBody Restponse editTagihan (@RequestBody Tagihan oldTagihan) {
-        Restponse response = new Restponse();
-        if (oldTagihan.getIdTagihan() == null) {
-            response.setStatus("401");
-            response.setMessage("idTagihan is null.");
-            return response;
-        }
-        Optional<Tagihan> optionalTagihan = tagihanRepository.findById(oldTagihan.getIdTagihan());
-        if (optionalTagihan.isEmpty()) {
-            response.setStatus("401");
-            response.setMessage("Could not find Tagihan with idTagihan=" + oldTagihan.getIdTagihan().toString() + ".");
-            return response;
-        }
-        Tagihan newTagihan = optionalTagihan.get();
-        if (newTagihan.getIdPenagih() == null) { newTagihan.setIdPenagih(oldTagihan.getIdPenagih()); }
-        if (newTagihan.getIdYangDitagih() == null) { newTagihan.setIdYangDitagih(oldTagihan.getIdYangDitagih()); }
-        if (newTagihan.getTagihanNominal() == null) { newTagihan.setTagihanNominal(oldTagihan.getTagihanNominal()); }
-        if (newTagihan.getTagihanCreationDatetime() == null) { newTagihan.setTagihanCreationDatetime(oldTagihan.getTagihanCreationDatetime()); }
-        if (newTagihan.getTagihanIsLunas() == null) { newTagihan.setTagihanIsLunas(oldTagihan.getTagihanIsLunas()); }
-        if (newTagihan.getTagihanDurasi() == null) { newTagihan.setTagihanDurasi(oldTagihan.getTagihanDurasi()); }
-        if (newTagihan.getTagihanKeterangan() == null) { newTagihan.setTagihanKeterangan(oldTagihan.getTagihanKeterangan()); }
-        response.setStatus("200");
-        response.setMessage("succesful");
-        response.setPayload(tagihanRepository.save(newTagihan));
-        return response;
-    }
-
-    @PostMapping(path="")
-    public @ResponseBody Restponse postMapping (@RequestBody Tagihan tagihan) {
-        return addNewTagihan(tagihan);
+        return tagihanService.editTagihan(oldTagihan);
     }
 
     @PutMapping(path="")
     public @ResponseBody Restponse replaceTagihan (@RequestBody Tagihan newTagihan) {
-        Optional<Tagihan> oldTagihan = tagihanRepository.findById(newTagihan.getIdTagihan());
-        Restponse response = new Restponse();
-        if (oldTagihan.isEmpty()) {
-            response.setStatus("401");
-            response.setMessage("Could not find Tagihan with idTagihan=" + newTagihan.getIdTagihan().toString() + ".");
-            return response;
-        }
-        response.setStatus("200");
-        response.setMessage("succesful");
-        tagihanRepository.save(newTagihan);
-        response.setPayload(tagihanRepository.findById(newTagihan.getIdTagihan()));
-        return response;
+        return tagihanService.replaceTagihan(newTagihan);
     }
 
     @DeleteMapping(path="")
-    public @ResponseBody Restponse deleteTagihan(@RequestBody Long idTagihan) {
-
-        Restponse response = new Restponse();
-        if(tagihanRepository.existsById(idTagihan)) {
-            response.setStatus("270");
-            response.setMessage("Data deleted succesfully");
-            response.setPayload(tagihanRepository.findById(idTagihan));
-            tagihanRepository.deleteById(idTagihan);
-            return response;
-        } else {
-            response.setStatus("440");
-            response.setMessage("Could not find Tagihan with idTagihan=" + idTagihan.toString() + ".");
-            return response;
-        }
-    }
-
-    public Restponse addNewTagihan (Tagihan tagihan) {
-        Restponse response = new Restponse();
-        Optional<String> tagihanValidation = tagihan.validateNewTagihan();
-        if (tagihanValidation.isPresent()) {
-            response.setStatus("401");
-            response.setMessage(tagihanValidation.get());
-            return response;
-        }
-        tagihan.prepareNewTagihan();
-        response.setStatus("200");
-        response.setMessage("succesful");
-        response.setPayload(tagihanRepository.save(tagihan));
-        return response;
+    public @ResponseBody Restponse deleteTagihan (@RequestBody Long idTagihan) {
+        return tagihanService.deleteTagihan(idTagihan);
     }
 
     @GetMapping(path="/tes1")
-    public @ResponseBody Object tes1() throws JSONException {
-        WebClient tesClient = WebClient.create(tabunganService);
-
-        HashMap hash = new HashMap();
-        hash.put("idPenagih", 2);
-        hash.put("idYangDitagih", 1);
-        hash.put("tagihanNominal", 20);
-        hash.put("tagihanKeterangan", "tes jumat tes 1 - 1");
-
-        ResponseSpec responseTes = tesClient.post()
-                .uri("/tagihan/")
-                .body(Mono.just(hash), HashMap.class)
-                .retrieve();
-
-        return responseTes.bodyToMono(Object.class).block();
+    public @ResponseBody Restponse tes1 () {
+        return tagihanService.tes1();
     }
 }
